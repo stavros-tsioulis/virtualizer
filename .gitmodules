@@ -1,0 +1,3 @@
+[submodule "packages/typed-events"]
+	path = packages/typed-events
+	url = git@github.com:stavros-tsioulis/typed-events.git
