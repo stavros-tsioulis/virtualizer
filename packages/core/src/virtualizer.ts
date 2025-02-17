@@ -1,4 +1,4 @@
-import { EventEmitter } from "typed-events"
+import { EventEmitter } from "typed-events";
 
 export type Cursor = {
 	offset: bigint;
@@ -89,12 +89,12 @@ export class VirtualizationManager {
 }
 
 export type VirtualizerEvents = {
-	added: [element: HTMLElement]
-	updated: [element: HTMLElement]
-	hidden: [element: HTMLElement]
-	rendered: [element: HTMLElement]
-	visible: [element: HTMLElement]
-}
+	added: [element: HTMLElement];
+	updated: [element: HTMLElement];
+	hidden: [element: HTMLElement];
+	rendered: [element: HTMLElement];
+	visible: [element: HTMLElement];
+};
 
 export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 	ctx: VirtualizerContext;
@@ -114,12 +114,12 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 		this.options = options;
 	}
 
-  start() {
-    this.ctx = this.initializeContext();
+	start() {
+		this.ctx = this.initializeContext();
 		this.refreshItems();
 		this.#observer = new MutationObserver((mutations) => this.handleMutations(mutations));
 		this.attachObservers();
-    this.updateDisplay()
+		this.updateDisplay();
 		if (this.ctx.target) {
 			this.#targetObserver = new MutationObserver(() => {
 				this.refreshElements();
@@ -128,16 +128,21 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 		}
 		this.#contextTimer = setInterval(() => this.refreshContext(), 1000);
 		this.#garbageTimer = setInterval(
-			() => this.enqueueIdleTask(() => { this.cleanObservers(); this._garbageCollectInnerHTML(); }),
-			10000
-				);
+			() =>
+				this.enqueueIdleTask(() => {
+					this.cleanObservers();
+					this._garbageCollectInnerHTML();
+				}),
+			10000,
+		);
 		// NEW: Only attach scroll listener if disableScrollCursor is not set.
 		if (!this.options.disableScrollCursor) {
 			this._boundScrollListener = this._onScroll.bind(this);
 			if (
 				this.ctx.target &&
-				((getComputedStyle(this.ctx.target).overflow === "auto" || this.ctx.target.classList.contains("overflow-auto")) ||
-				this.options.useTargetScroll)
+				(getComputedStyle(this.ctx.target).overflow === "auto" ||
+					this.ctx.target.classList.contains("overflow-auto") ||
+					this.options.useTargetScroll)
 			) {
 				this._scrollElem = this.ctx.target;
 			} else {
@@ -181,18 +186,14 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 	resolveElements(target: HTMLElement | null): HTMLElement[] {
 		if (Array.isArray(this.options.items)) {
 			return this.options.items
-				.map((item) =>
-					typeof item === "string" ? document.querySelector(item) : item
-				)
+				.map((item) => (typeof item === "string" ? document.querySelector(item) : item))
 				.filter((el): el is HTMLElement => el instanceof HTMLElement);
 		}
 		if (typeof this.options.items === "string") {
 			return Array.from(document.querySelectorAll(this.options.items));
 		}
 		return target instanceof HTMLElement
-			? Array.from(target.children).filter(
-					(child): child is HTMLElement => child instanceof HTMLElement
-			  )
+			? Array.from(target.children).filter((child): child is HTMLElement => child instanceof HTMLElement)
 			: [];
 	}
 
@@ -220,9 +221,7 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 	refreshItems(): void {
 		this.ctx.elements.forEach((el) => {
 			const key = this.getElementKey(el);
-			const rect = this.options.rectProvider
-				? this.options.rectProvider(el)
-				: el.getBoundingClientRect();
+			const rect = this.options.rectProvider ? this.options.rectProvider(el) : el.getBoundingClientRect();
 			const size = BigInt(Math.round(rect.height));
 			const offset = BigInt(Math.round(rect.top));
 			this.ctx.manager.updateItem(key, size, offset);
@@ -235,23 +234,21 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 
 	handleMutations(mutations: MutationRecord[]): void {
 		mutations.forEach((mutation) => {
-			if (mutation.type === 'attributes' || mutation.type === 'childList') {
+			if (mutation.type === "attributes" || mutation.type === "childList") {
 				const target = mutation.target as HTMLElement;
 				const key = this.getElementKey(target);
-				const rect = this.options.rectProvider
-					? this.options.rectProvider(target)
-					: target.getBoundingClientRect();
+				const rect = this.options.rectProvider ? this.options.rectProvider(target) : target.getBoundingClientRect();
 				const size = BigInt(Math.round(rect.height));
 				const offset = BigInt(Math.round(rect.top));
-        const existingItem = this.ctx.manager.getItem(key);
-        if (
-          existingItem === undefined ||
-          this.ctx.manager.getItemSize(existingItem) !== size ||
-          this.ctx.manager.getItemOffset(existingItem) !== offset
-        ) {
-          this.ctx.manager.updateItem(key, size, offset);
-          this.emit("updated", target);
-        }
+				const existingItem = this.ctx.manager.getItem(key);
+				if (
+					existingItem === undefined ||
+					this.ctx.manager.getItemSize(existingItem) !== size ||
+					this.ctx.manager.getItemOffset(existingItem) !== offset
+				) {
+					this.ctx.manager.updateItem(key, size, offset);
+					this.emit("updated", target);
+				}
 			}
 		});
 		this.updateDisplay();
@@ -285,7 +282,7 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 		this.#observer.disconnect();
 
 		// Pre-calculate heights for each element.
-		const heights: bigint[] = this.ctx.elements.map(el => {
+		const heights: bigint[] = this.ctx.elements.map((el) => {
 			const key = this.getElementKey(el);
 			const itemData = this.ctx.manager.getItem(key);
 			return itemData !== undefined ? this.ctx.manager.getItemSize(itemData) : 0n;
@@ -322,19 +319,19 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 					this.emit("hidden", el);
 				}
 
-        if (this.options.removeInnerHTMLWhenHidden) {
-          if (newState === 'hidden') {
-            this._removedContentMap.set(key, el.innerHTML);
-            el.innerHTML = "";
-          } else {
-            const removedContent = this._removedContentMap.get(key);
-            if (removedContent) {
-              el.innerHTML = removedContent;
-              this._removedContentMap.delete(key);
-            }
-          }
-        }
-      }
+				if (this.options.removeInnerHTMLWhenHidden) {
+					if (newState === "hidden") {
+						this._removedContentMap.set(key, el.innerHTML);
+						el.innerHTML = "";
+					} else {
+						const removedContent = this._removedContentMap.get(key);
+						if (removedContent) {
+							el.innerHTML = removedContent;
+							this._removedContentMap.delete(key);
+						}
+					}
+				}
+			}
 
 			el.classList.add(`virtualizer-${newState}`);
 			el.style.transform = "";
@@ -361,7 +358,7 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 	}
 
 	private _garbageCollectInnerHTML(): void {
-		const existingKeys = new Set(this.ctx.elements.map(el => this.getElementKey(el)));
+		const existingKeys = new Set(this.ctx.elements.map((el) => this.getElementKey(el)));
 		for (const key of Array.from(this._removedContentMap.keys())) {
 			if (!existingKeys.has(key)) {
 				this._removedContentMap.delete(key);

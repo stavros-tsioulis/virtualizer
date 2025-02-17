@@ -1,21 +1,15 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Debug compiled unit tests",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "cwd": "${workspaceFolder}/packages/core",
-      "runtimeExecutable": "node",
-      "runtimeArgs": [
-        "--test",
-        "./dist.test/**/*.test.js",
-        "--inspect=9229"
-      ],
-      "console": "integratedTerminal"
-    }
-  ]
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug compiled unit tests",
+			"skipFiles": ["<node_internals>/**"],
+			"cwd": "${workspaceFolder}/packages/core",
+			"runtimeExecutable": "node",
+			"runtimeArgs": ["--test", "./dist.test/**/*.test.js", "--inspect=9229"],
+			"console": "integratedTerminal"
+		}
+	]
 }

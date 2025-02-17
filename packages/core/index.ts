@@ -1,1 +1,1 @@
-export * from "./src/virtualizer.js"
+export * from "./src/virtualizer.js";

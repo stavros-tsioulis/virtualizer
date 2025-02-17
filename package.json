@@ -1,12 +1,22 @@
 {
-  "name": "virtualizer",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "core": "pnpm -F core"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+	"name": "virtualizer",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"core": "pnpm -F core"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"husky": "^9.1.7",
+		"lint-staged": "^15.4.3",
+		"prettier": "^3.5.1"
+	},
+	"lint-staged": {
+		"*": [
+			"prettier --write ."
+		]
+	}
 }

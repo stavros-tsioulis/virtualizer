@@ -1,0 +1,32 @@
+# This
+.prettierignore
+
+# Submodules
+typed-events/
+
+# Config
+pnpm-workspace.yaml
+.dockerignore
+.gitignore
+.gitmodules
+Dockerfile
+.github/
+pnpm-lock.yaml
+
+# Build files
+**/dist/
+**/dist.test/
+**/dist.core/
+**/build/
+
+# Hysky (pre-commit hooks)
+.husky/
+
+README.md
+
+# Act (github workflow simulator)
+install-act.sh
+act/
+
+# this is generated inside act runner
+.pnpm-store/
