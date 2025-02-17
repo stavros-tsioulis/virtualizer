@@ -158,7 +158,7 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 		} else {
 			scrollTop = window.scrollY;
 		}
-		this.setCursorOffset(BigInt(scrollTop));
+		this.setCursorOffset(BigInt(Math.round(scrollTop)));
 	}
 
 	initializeContext(): VirtualizerContext {
@@ -218,6 +218,8 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 
 	refreshItems(): void {
 		this.ctx.elements.forEach((el) => {
+			if (el.classList.contains("virtualizer-hidden")) return
+
 			const key = this.getElementKey(el);
 			const rect = this.options.rectProvider ? this.options.rectProvider(el) : el.getBoundingClientRect();
 			const size = BigInt(Math.round(rect.height));
@@ -279,17 +281,8 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 	updateDisplay(): void {
 		this.#observer.disconnect();
 
-		// Pre-calculate heights for each element.
-		const heights: bigint[] = this.ctx.elements.map((el) => {
-			const key = this.getElementKey(el);
-			const itemData = this.ctx.manager.getItem(key);
-			return itemData !== undefined ? this.ctx.manager.getItemSize(itemData) : 0n;
-		});
-
 		let topPadding = 0n;
 		let bottomPadding = 0n;
-		let firstVisibleFound = false;
-		let lastVisibleIndex = -1;
 
 		// Process each element to update state and compute padding accumulations.
 		this.ctx.elements.forEach((el, i) => {
@@ -307,6 +300,7 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 			}
 
 			if (el.dataset.virtualState !== newState) {
+				el.classList.remove(`virtualizer-${el.dataset.virtualState}`);
 				el.dataset.virtualState = newState;
 				if (newState === "visible") {
 					this.emit("visible", el);
@@ -333,21 +327,34 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 
 			el.classList.add(`virtualizer-${newState}`);
 			el.style.transform = "";
-
-			if (!firstVisibleFound && newState === "visible") {
-				firstVisibleFound = true;
-			}
-			if (!firstVisibleFound) {
-				topPadding += heights[i];
-			}
-			if (newState === "visible") {
-				lastVisibleIndex = i;
-			}
 		});
 
-		for (let i = lastVisibleIndex + 1; i < this.ctx.elements.length; i++) {
-			bottomPadding += heights[i];
+		const firstNonHiddenElementIndex = this.ctx.elements.findIndex(
+			(el) => el.dataset.virtualState !== "hidden",
+		);
+		const lastNonHiddenElementIndex = this.ctx.elements.findLastIndex(
+			(el) => el.dataset.virtualState !== "hidden",
+		)
+
+		if (firstNonHiddenElementIndex > 0) {
+			const el = this.ctx.elements[firstNonHiddenElementIndex];
+			const itemData = this.ctx.manager.getItem(this.getElementKey(el)) ?? 0n;
+			topPadding = this.ctx.manager.getItemOffset(itemData);
 		}
+
+		if (lastNonHiddenElementIndex !== -1 && lastNonHiddenElementIndex < this.ctx.elements.length - 1) {
+			const el = this.ctx.elements[lastNonHiddenElementIndex];
+			const lastEl = this.ctx.elements[this.ctx.elements.length - 1];
+			const itemData = this.ctx.manager.getItem(this.getElementKey(el)) ?? 0n;
+			const lastItemData = this.ctx.manager.getItem(this.getElementKey(lastEl)) ?? 0n;
+			bottomPadding = (
+				this.ctx.manager.getItemOffset(lastItemData) +
+				this.ctx.manager.getItemSize(lastItemData) -
+				this.ctx.manager.getItemOffset(itemData) -
+				this.ctx.manager.getItemSize(itemData)
+			);
+		}
+
 		if (this.ctx.target) {
 			this.ctx.target.style.paddingTop = topPadding.toString() + "px";
 			this.ctx.target.style.paddingBottom = bottomPadding.toString() + "px";

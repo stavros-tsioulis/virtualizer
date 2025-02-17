@@ -1,0 +1,28 @@
+
+/* Style for the virtualizer target container */
+.virtualizer-target {
+  position: relative;
+  padding-top: 0; /* these padding values will be dynamically updated */
+  padding-bottom: 0;
+}
+
+/* Any element not marked as a virtualizer-item is absolutely positioned at top 0 */
+.virtualizer-target > :not(.virtualizer-item) {
+  position: absolute;
+  top: 0;
+}
+
+/* Virtualizer item state styles */
+.virtualizer-visible {
+  display: block;
+  opacity: 1;
+}
+
+.virtualizer-invisible {
+  display: block;
+  opacity: 0;
+}
+
+.virtualizer-hidden {
+  display: none;
+}

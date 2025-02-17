@@ -4,12 +4,15 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"core": "pnpm -F core",
-		"playground": "pnpm -F playground"
+		"core": "pnpm -F @virtualizer/core",
+		"playground": "pnpm -F @virtualizer/playground"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
+	"dependencies": {
+		"virtualizer": "workspace:virtualizer"
+	},
 	"devDependencies": {
 		"husky": "^9.1.7",
 		"lint-staged": "^15.4.3",
