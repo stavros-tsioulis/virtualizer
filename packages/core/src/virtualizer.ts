@@ -135,7 +135,6 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 				}),
 			10000,
 		);
-		// NEW: Only attach scroll listener if disableScrollCursor is not set.
 		if (!this.options.disableScrollCursor) {
 			this._boundScrollListener = this._onScroll.bind(this);
 			if (
@@ -152,7 +151,6 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 		}
 	}
 
-	// NEW: Scroll handler to update cursor offset.
 	private _onScroll(): void {
 		let scrollTop: number;
 		if (this._scrollElem instanceof HTMLElement) {
