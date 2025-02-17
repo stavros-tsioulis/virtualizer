@@ -4,7 +4,8 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"core": "pnpm -F core"
+		"core": "pnpm -F core",
+		"playground": "pnpm -F playground"
 	},
 	"keywords": [],
 	"author": "",
