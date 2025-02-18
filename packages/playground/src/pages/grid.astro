@@ -1,0 +1,35 @@
+---
+// ...existing frontmatter...
+import Layout from '../layouts/Layout.astro';
+const items = Array.from({length: 100000}, (_, i) => `Cell ${i}`);
+---
+<Layout>
+	<div class="relative">
+		<div class="virtualizer-target grid grid-cols-5 gap-4 w-full">
+			{items.map(item => (
+				<div class="virtualizer-item border p-4">{item}</div>
+			))}
+		</div>
+	</div>
+</Layout>
+
+<script>
+	import { virtualizer } from "@virtualizer/core";
+	// virtualizer(".virtualizer-target", {
+	// 	removeElementWhenHidden: true
+	// });
+</script>
+
+<style>
+	/* ...existing styles... */
+	.virtualizer-target {
+		position: relative;
+	}
+	.virtualizer-target > :not(.virtualizer-item) {
+		position: absolute;
+		top: 0;
+		max-width: 100%;
+	}
+	.virtualizer-invisible { opacity: 0; }
+	.virtualizer-hidden { display: none; }
+</style>

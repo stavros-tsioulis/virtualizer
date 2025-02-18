@@ -13,7 +13,7 @@ export type VirtualizerOptions = {
 	visibleWindow?: bigint;
 	dontVirtualizeIf?: (element: HTMLElement) => boolean;
 	rectProvider?: (element: HTMLElement) => DOMRect;
-	removeInnerHTMLWhenHidden?: boolean;
+	removeElementWhenHidden?: boolean;
 	useTargetScroll?: boolean;
 	disableScrollCursor?: boolean;
 };
@@ -105,7 +105,7 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 	#idleCallbackId: number | null = null;
 	#contextTimer: ReturnType<typeof setInterval>;
 	#garbageTimer: ReturnType<typeof setInterval>;
-	private _removedContentMap: Map<string, string> = new Map();
+	private _removedElementMap: Map<string, HTMLElement> = new Map();
 	private _scrollElem: HTMLElement | Window | null = null;
 	private _boundScrollListener!: () => void;
 
@@ -131,12 +131,12 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 			() =>
 				this.enqueueIdleTask(() => {
 					this.cleanObservers();
-					this._garbageCollectInnerHTML();
 				}),
 			10000,
 		);
 		if (!this.options.disableScrollCursor) {
-			this._boundScrollListener = this._onScroll.bind(this);
+			// Use throttled scroll listener (max once per 50ms)
+			this._boundScrollListener = this.throttle(this._onScroll.bind(this), 50);
 			if (
 				this.ctx.target &&
 				(getComputedStyle(this.ctx.target).overflow === "auto" ||
@@ -279,13 +279,20 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 	}
 
 	updateDisplay(): void {
+		// Disconnect internal observers.
 		this.#observer.disconnect();
+		if (this.#targetObserver) {
+			this.#targetObserver.disconnect();
+		}
 
 		let topPadding = 0n;
 		let bottomPadding = 0n;
 
-		// Process each element to update state and compute padding accumulations.
-		this.ctx.elements.forEach((el, i) => {
+		// Process each element with its index.
+		this.ctx.elements.forEach((el, index) => {
+			// Set the virtualizer-index attribute
+			el.setAttribute("virtualizer-index", index.toString());
+
 			const key = this.getElementKey(el);
 			const itemData = this.ctx.manager.getItem(key);
 			if (itemData === undefined) return;
@@ -299,6 +306,34 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 				newState = "hidden";
 			}
 
+				// If removeElementWhenHidden is enabled, remove or reattach element based on state.
+				if (this.options.removeElementWhenHidden) {
+					if (newState === "hidden" && el.parentElement) {
+						el.remove();
+						// Store removed element.
+						this._removedElementMap.set(key, el);
+						// Skip further processing for hidden elements.
+						return;
+					} else if (newState !== "hidden" && !el.parentElement && this.ctx.target) {
+						// Reattach element at the proper position using its virtualizer-index.
+						const target = this.ctx.target;
+						const children = Array.from(target.children);
+						let inserted = false;
+						for (const child of children) {
+							const childIndex = parseInt(child.getAttribute("virtualizer-index") || "0", 10);
+							if (childIndex > index) {
+								target.insertBefore(el, child);
+								inserted = true;
+								break;
+							}
+						}
+						if (!inserted) {
+							target.appendChild(el);
+						}
+						this._removedElementMap.delete(key);
+					}
+				}
+
 			if (el.dataset.virtualState !== newState) {
 				el.classList.remove(`virtualizer-${el.dataset.virtualState}`);
 				el.dataset.virtualState = newState;
@@ -310,38 +345,23 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 				} else {
 					this.emit("hidden", el);
 				}
-
-				if (this.options.removeInnerHTMLWhenHidden) {
-					if (newState === "hidden") {
-						this._removedContentMap.set(key, el.innerHTML);
-						el.innerHTML = "";
-					} else {
-						const removedContent = this._removedContentMap.get(key);
-						if (removedContent) {
-							el.innerHTML = removedContent;
-							this._removedContentMap.delete(key);
-						}
-					}
-				}
 			}
-
 			el.classList.add(`virtualizer-${newState}`);
 			el.style.transform = "";
 		});
 
+		// ...existing code to compute topPadding and bottomPadding...
 		const firstNonHiddenElementIndex = this.ctx.elements.findIndex(
-			(el) => el.dataset.virtualState !== "hidden",
+			(el) => el.dataset.virtualState !== "hidden"
 		);
 		const lastNonHiddenElementIndex = this.ctx.elements.findLastIndex(
-			(el) => el.dataset.virtualState !== "hidden",
-		)
-
+			(el) => el.dataset.virtualState !== "hidden"
+		);
 		if (firstNonHiddenElementIndex > 0) {
 			const el = this.ctx.elements[firstNonHiddenElementIndex];
 			const itemData = this.ctx.manager.getItem(this.getElementKey(el)) ?? 0n;
 			topPadding = this.ctx.manager.getItemOffset(itemData);
 		}
-
 		if (lastNonHiddenElementIndex !== -1 && lastNonHiddenElementIndex < this.ctx.elements.length - 1) {
 			const el = this.ctx.elements[lastNonHiddenElementIndex];
 			const lastEl = this.ctx.elements[this.ctx.elements.length - 1];
@@ -354,20 +374,16 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 				this.ctx.manager.getItemSize(itemData)
 			);
 		}
-
 		if (this.ctx.target) {
 			this.ctx.target.style.paddingTop = topPadding.toString() + "px";
 			this.ctx.target.style.paddingBottom = bottomPadding.toString() + "px";
 		}
-		this.attachObservers();
-	}
 
-	private _garbageCollectInnerHTML(): void {
-		const existingKeys = new Set(this.ctx.elements.map((el) => this.getElementKey(el)));
-		for (const key of Array.from(this._removedContentMap.keys())) {
-			if (!existingKeys.has(key)) {
-				this._removedContentMap.delete(key);
-			}
+		this.attachObservers();
+
+		// Reattach the target observer if a target exists.
+		if (this.ctx.target && this.#targetObserver) {
+			this.#targetObserver.observe(this.ctx.target, { childList: true });
 		}
 	}
 
@@ -392,4 +408,31 @@ export class Virtualizer extends EventEmitter<VirtualizerEvents> {
 			this._scrollElem.removeEventListener("scroll", this._boundScrollListener);
 		}
 	}
+
+	private throttle(fn: (...args: any[]) => void, delay: number): () => void {
+		let lastCall = 0;
+		return (...args: any[]) => {
+			const now = Date.now();
+			if (now - lastCall >= delay) {
+				lastCall = now;
+				fn(...args);
+			}
+		};
+	}
+}
+
+export function virtualizer(target: HTMLElement | string, options?: Omit<VirtualizerOptions, "target">): Virtualizer
+export function virtualizer(options: VirtualizerOptions): Virtualizer
+export function virtualizer(targetOrOptions: HTMLElement | string | VirtualizerOptions, options?: Omit<VirtualizerOptions, "target">): Virtualizer {
+	let virt: Virtualizer;
+
+	if (targetOrOptions instanceof HTMLElement || typeof targetOrOptions === "string") {
+		virt = new Virtualizer({ target: targetOrOptions, ...options });
+	} else {
+		virt = new Virtualizer(targetOrOptions);
+	}
+
+	virt.start()
+
+	return virt
 }

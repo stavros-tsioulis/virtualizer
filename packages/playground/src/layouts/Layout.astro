@@ -15,3 +15,28 @@ import "../styles/global.css";
 		<slot />
 	</body>
 </html>
+
+<style>
+	/* Style for the virtualizer target container */
+	.virtualizer-target {
+		position: relative;
+	}
+
+	/* Any element not marked as a virtualizer-item is absolutely positioned at top 0 */
+	.virtualizer-target > :not(.virtualizer-item) {
+		position: absolute;
+		top: 0;
+		max-width: 100%;
+	}
+
+	/* Virtualizer item state styles */
+	.virtualizer-visible {}
+
+	.virtualizer-invisible {
+		opacity: 0;
+	}
+
+	.virtualizer-hidden {
+		display: none;
+	}
+</style>

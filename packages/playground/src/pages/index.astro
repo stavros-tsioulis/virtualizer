@@ -3,60 +3,10 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout>
-	<div class="relative">
-		<ul class="*:p-32 *:bg-gray-300 *:border-2 *:border-black">
-			<li></li>
-			<li></li>
-			<li></li>
-			<li></li>
-			<li></li>
-			<li></li>
-			<li></li>
-			<li></li>
+	<nav>
+		<ul class="flex space-x-4 p-4">
+			<li><a href="/table" class="text-blue-600 hover:underline">Table Example</a></li>
+			<li><a href="/grid" class="text-blue-600 hover:underline">Grid Example</a></li>
 		</ul>
-		<div class="fixed left-0 top-0 w-full h-[200px] border-2 border-black"></div>
-		<div class="fixed left-0 -top-[200px] w-full h-[600px] border-2 border-blue-500"></div>
-		<div class="fixed left-0 -top-[400px] w-full h-[1000px] border-2 border-green-500"></div>
-	</div>
+	</nav>
 </Layout>
-
-<script>
-	import { Virtualizer } from "@virtualizer/core"
-
-	const virtualizer = new Virtualizer({
-		target: "ul",
-		cursor: { offset: 0n, size: 200n },
-		renderWindow: 400n,
-		visibleWindow: 200n,
-	})
-
-	// @ts-expect-error
-	window._virtualizer = virtualizer
-
-	virtualizer.start()
-</script>
-
-<style>
-	/* Style for the virtualizer target container */
-	.virtualizer-target {
-		position: relative;
-	}
-
-	/* Any element not marked as a virtualizer-item is absolutely positioned at top 0 */
-	.virtualizer-target > :not(.virtualizer-item) {
-		position: absolute;
-		top: 0;
-		max-width: 100%;
-	}
-
-	/* Virtualizer item state styles */
-	.virtualizer-visible {}
-
-	.virtualizer-invisible {
-		opacity: 0;
-	}
-
-	.virtualizer-hidden {
-		display: none;
-	}
-</style>

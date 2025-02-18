@@ -145,8 +145,8 @@ describe("Virtualizer", () => {
 		assert.ok(newElement2.classList.contains("virtualizer-hidden"), "New element should be hidden after measurement");
 	});
 
-	it("should remove innerHTML when element is hidden and restore when visible", async () => {
-		// Create container with one element that has innerHTML content.
+	it("should remove element when hidden and reattach when visible", async () => {
+		// Create container with one element containing inner content.
 		const container = makeHtmlIntoNode(`
       <div>
         <div data-height="100" data-offset="0">Test Content</div>
@@ -159,33 +159,29 @@ describe("Virtualizer", () => {
 			renderWindow: 400n,
 			visibleWindow: 200n,
 			rectProvider: rectProviderWithDataset,
-			removeInnerHTMLWhenHidden: true,
+			removeElementWhenHidden: true, // use the new option
 		});
 		virtualizers.push(virtualizer);
 		virtualizer.start();
 
 		const element = container.children[0] as HTMLElement;
-		// Initially element is visible; content should be intact.
+		// Initially, element is visible.
 		assert.strictEqual(element.classList.contains("virtualizer-visible"), true);
 		assert.strictEqual(element.innerHTML, "Test Content");
 
-		// Shift cursor offset so element becomes hidden.
+		// Shift cursor offset so that element becomes hidden.
 		virtualizer.setCursorOffset(1000n);
-		// Allow updateDisplay to propagate.
 		await new Promise((r) => setTimeout(r, 50));
 
-		// Now element should be hidden and innerHTML removed.
-		assert.strictEqual(element.classList.contains("virtualizer-hidden"), true);
-		assert.strictEqual(element.innerHTML, "");
-		// The removed content should be stored in the map via dataset tracking by Virtualizer (not directly accessible)
-		// So we check that the element's dataset did not restore the content.
-		assert.ok(!element.dataset.virtualizerContent);
+		// Now the element should be removed from the DOM.
+		assert.strictEqual(container.contains(element), false);
 
-		// Shift cursor offset so element becomes visible again.
+		// Shift cursor offset back so that element should be reattached.
 		virtualizer.setCursorOffset(0n);
 		await new Promise((r) => setTimeout(r, 50));
 
-		// Now element should be visible and innerHTML restored.
+		// The element should now be present in the DOM and visible.
+		assert.strictEqual(container.contains(element), true);
 		assert.strictEqual(element.classList.contains("virtualizer-visible"), true);
 		assert.strictEqual(element.innerHTML, "Test Content");
 	});
