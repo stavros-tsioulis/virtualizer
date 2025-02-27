@@ -3,10 +3,33 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout>
-	<nav>
-		<ul class="flex space-x-4 p-4">
-			<li><a href="/table" class="text-blue-600 hover:underline">Table Example</a></li>
-			<li><a href="/grid" class="text-blue-600 hover:underline">Grid Example</a></li>
-		</ul>
-	</nav>
+	<ul>
+		<li></li>
+		<li></li>
+		<li></li>
+		<li></li>
+		<li></li>
+	</ul>
 </Layout>
+
+<script>
+	import { virtualizer, setWasmUrl } from "@virtualizer/core"
+	setWasmUrl("/items_manager.wasm")
+	virtualizer({
+		strategy: "fully_observed_list",
+		target: "ul"
+	}).then(v => v.start())
+</script>
+
+<style>
+	ul {
+		list-style: none;
+		border: 2px solid red;
+	}
+
+	li {
+		padding: 1rem;
+		list-style: none;
+		border: 2px solid blue;
+	}
+</style>

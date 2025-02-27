@@ -1,0 +1,35 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script type="module">
+    const ws = await WebAssembly.instantiateStreaming(fetch("./items_manager.wasm"))
+    console.log(ws)
+
+    const { memory } = ws.instance.exports
+
+    const input = new BigUint64Array(memory.buffer, 0, 2)
+    input.set([
+      (200n) << 32n | 0n,
+      (200n) << 32n | 300n,
+    ])
+
+    const output = new BigUint64Array(memory.buffer, 2 * BigUint64Array.BYTES_PER_ELEMENT, 2)
+
+    const len = ws.instance.exports.get_item_indices_in_window(
+      input.byteOffset,
+      output.byteOffset,
+      2,
+      0,
+      100,
+      300,
+    )
+
+    console.log(len, output)
+  </script>
+</head>
+<body>
+  
+</body>
+</html>

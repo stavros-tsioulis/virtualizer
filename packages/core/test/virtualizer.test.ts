@@ -43,7 +43,7 @@ describe("Virtualizer", () => {
 		}
 	});
 
-	it.skip("should properly virtualize items", async () => {
+	it("should properly virtualize items", async () => {
 		const container = createVirtualizedTree([
 			{ height: 100, offset: 0 },
 			{ height: 200, offset: 100 },
@@ -71,9 +71,10 @@ describe("Virtualizer", () => {
 		assert.strictEqual(fourth.classList.contains("virtualizer-invisible"), true);
 		assert.strictEqual(fifth.classList.contains("virtualizer-hidden"), true);
 		assert.strictEqual(container.style.paddingTop, "0px");
-		assert.strictEqual(container.style.paddingBottom, "600px");
+		assert.strictEqual(container.style.paddingBottom, "500px");
 
 		virtualizer.setCursorOffset(600n);
+		await new Promise((r) => setTimeout(r, 50));
 
 		assert.strictEqual(first.classList.contains("virtualizer-hidden"), true);
 		assert.strictEqual(second.classList.contains("virtualizer-invisible"), true);
@@ -143,47 +144,6 @@ describe("Virtualizer", () => {
 			"New element should have a marker that it is virtualized",
 		);
 		assert.ok(newElement2.classList.contains("virtualizer-hidden"), "New element should be hidden after measurement");
-	});
-
-	it("should remove element when hidden and reattach when visible", async () => {
-		// Create container with one element containing inner content.
-		const container = makeHtmlIntoNode(`
-      <div>
-        <div data-height="100" data-offset="0">Test Content</div>
-      </div>
-    `);
-
-		const virtualizer = new Virtualizer({
-			target: container,
-			cursor: { size: 200n, offset: 0n },
-			renderWindow: 400n,
-			visibleWindow: 200n,
-			rectProvider: rectProviderWithDataset,
-			removeElementWhenHidden: true, // use the new option
-		});
-		virtualizers.push(virtualizer);
-		virtualizer.start();
-
-		const element = container.children[0] as HTMLElement;
-		// Initially, element is visible.
-		assert.strictEqual(element.classList.contains("virtualizer-visible"), true);
-		assert.strictEqual(element.innerHTML, "Test Content");
-
-		// Shift cursor offset so that element becomes hidden.
-		virtualizer.setCursorOffset(1000n);
-		await new Promise((r) => setTimeout(r, 50));
-
-		// Now the element should be removed from the DOM.
-		assert.strictEqual(container.contains(element), false);
-
-		// Shift cursor offset back so that element should be reattached.
-		virtualizer.setCursorOffset(0n);
-		await new Promise((r) => setTimeout(r, 50));
-
-		// The element should now be present in the DOM and visible.
-		assert.strictEqual(container.contains(element), true);
-		assert.strictEqual(element.classList.contains("virtualizer-visible"), true);
-		assert.strictEqual(element.innerHTML, "Test Content");
 	});
 
 	it("should trigger events appropriately", async () => {

@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "*.embeddedhtml": "html",
+    "__locale": "c"
+  }
+}
